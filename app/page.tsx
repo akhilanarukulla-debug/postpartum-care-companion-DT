@@ -3,12 +3,14 @@
 import { useState, useCallback } from "react"
 import { BackgroundPattern } from "@/components/background-pattern"
 import { BottomNav } from "@/components/bottom-nav"
+import { OnboardingScreen } from "@/components/screens/onboarding-screen"
 import { LoginScreen } from "@/components/screens/login-screen"
 import { DashboardScreen } from "@/components/screens/dashboard-screen"
 import { MoodScreen } from "@/components/screens/mood-screen"
 import { WaterScreen } from "@/components/screens/water-screen"
 import { RemindersScreen } from "@/components/screens/reminders-screen"
 import { AnalyticsScreen } from "@/components/screens/analytics-screen"
+import { ProfileScreen } from "@/components/screens/profile-screen"
 import type { MoodHistoryEntry } from "@/components/mood-history-item"
 
 interface Reminder {
@@ -118,6 +120,7 @@ const initialReminders: Reminder[] = [
 ]
 
 export default function Home() {
+  const [showOnboarding, setShowOnboarding] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [waterData, setWaterData] = useState({ current: 5, goal: 12 })
@@ -167,6 +170,10 @@ export default function Home() {
 
   const handleNavigate = (screen: string) => {
     setActiveTab(screen)
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onGetStarted={() => setShowOnboarding(false)} />
   }
 
   if (!isLoggedIn) {
@@ -224,6 +231,17 @@ export default function Home() {
           moodStreak={moodStreak}
           waterStreak={waterStreak}
           moodEntries={moodHistory}
+        />
+      )}
+
+      {activeTab === "profile" && (
+        <ProfileScreen
+          userName="Mama"
+          waterGoal={waterData.goal}
+          onUpdateWaterGoal={(goal) => setWaterData(prev => ({ ...prev, goal }))}
+          onLogout={() => setIsLoggedIn(false)}
+          moodStreak={moodStreak}
+          waterStreak={waterStreak}
         />
       )}
 

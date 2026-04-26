@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Smile, Droplets, Bell, BarChart3 } from "lucide-react"
+import { Home, Smile, Droplets, Bell, BarChart3, User } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface BottomNavProps {
@@ -14,6 +14,7 @@ const tabs = [
   { id: "water", icon: Droplets, label: "Water" },
   { id: "reminders", icon: Bell, label: "Reminders" },
   { id: "analytics", icon: BarChart3, label: "Analytics" },
+  { id: "profile", icon: User, label: "Profile" },
 ]
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
