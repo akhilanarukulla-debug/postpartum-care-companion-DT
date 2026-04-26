@@ -23,16 +23,24 @@ export function MoodCard({ mood, icon, isSelected, onClick, color }: MoodCardPro
     <button
       onClick={onClick}
       className={cn(
-        "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl transition-all duration-200",
+        "flex flex-col items-center justify-center gap-2 p-4 rounded-2xl",
         "w-20 h-20 md:w-24 md:h-24",
+        "transition-all duration-150 ease-out",
+        "active:scale-90",
         colorMap[color],
         isSelected && "ring-2 ring-offset-2 ring-[#5A4545] scale-105 shadow-lg",
+        !isSelected && "hover:scale-102 hover:shadow-md",
         "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0]"
       )}
       aria-pressed={isSelected}
       aria-label={`Select ${mood} mood`}
     >
-      <span className="text-2xl md:text-3xl">{icon}</span>
+      <span className={cn(
+        "text-2xl md:text-3xl transition-transform duration-150",
+        isSelected && "scale-110"
+      )}>
+        {icon}
+      </span>
       <span className="text-xs font-medium text-foreground capitalize">{mood}</span>
     </button>
   )

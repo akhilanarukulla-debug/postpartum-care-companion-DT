@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { BackgroundPattern } from "@/components/background-pattern"
 import { BottomNav } from "@/components/bottom-nav"
 import { LoginScreen } from "@/components/screens/login-screen"
@@ -60,17 +60,27 @@ export default function Home() {
   const [currentMood, setCurrentMood] = useState<{ mood: string; icon: string } | null>(null)
   const [waterData, setWaterData] = useState({ current: 5, goal: 12 })
   const [reminders, setReminders] = useState<Reminder[]>(initialReminders)
+  
+  // Streak tracking (in a real app, this would persist to storage)
+  const [moodStreak, setMoodStreak] = useState(5)
+  const [waterStreak, setWaterStreak] = useState(3)
 
   const handleLogin = () => {
     setIsLoggedIn(true)
   }
 
-  const handleSaveMood = (mood: string) => {
+  const handleSaveMood = useCallback((mood: string) => {
     setCurrentMood({ mood, icon: moodIcons[mood] || "😊" })
-  }
+    // Increment streak when logging mood
+    setMoodStreak(prev => prev + 1)
+  }, [])
 
   const handleUpdateWater = (current: number, goal: number) => {
     setWaterData({ current, goal })
+    // If goal is met, increment streak
+    if (current >= goal && waterData.current < waterData.goal) {
+      setWaterStreak(prev => prev + 1)
+    }
   }
 
   const handleUpdateReminders = (updatedReminders: Reminder[]) => {
@@ -97,6 +107,9 @@ export default function Home() {
           moodData={currentMood}
           waterData={waterData}
           reminders={activeReminders.map((r) => ({ id: r.id, title: r.title, time: r.time }))}
+          onQuickMood={handleSaveMood}
+          moodStreak={moodStreak}
+          waterStreak={waterStreak}
         />
       )}
 
@@ -104,6 +117,7 @@ export default function Home() {
         <MoodScreen
           onSaveMood={handleSaveMood}
           currentMood={currentMood?.mood || null}
+          streak={moodStreak}
         />
       )}
 
@@ -111,6 +125,7 @@ export default function Home() {
         <WaterScreen
           waterData={waterData}
           onUpdateWater={handleUpdateWater}
+          streak={waterStreak}
         />
       )}
 
@@ -125,6 +140,8 @@ export default function Home() {
         <AnalyticsScreen
           moodHistory={sampleMoodHistory}
           waterHistory={sampleWaterHistory}
+          moodStreak={moodStreak}
+          waterStreak={waterStreak}
         />
       )}
 

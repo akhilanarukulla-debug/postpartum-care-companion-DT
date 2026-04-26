@@ -131,3 +131,67 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Micro-interaction utilities */
+@layer utilities {
+  .tap-scale {
+    @apply active:scale-95 transition-transform duration-150;
+  }
+  
+  .tap-scale-sm {
+    @apply active:scale-[0.98] transition-transform duration-150;
+  }
+  
+  .hover-lift {
+    @apply hover:-translate-y-0.5 hover:shadow-md transition-all duration-200;
+  }
+  
+  .press-effect {
+    @apply active:scale-95 active:shadow-sm transition-all duration-150;
+  }
+}
+
+/* Smooth progress bar animation */
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+}
+
+.animate-progress {
+  animation: progress-fill 0.8s ease-out forwards;
+}
+
+/* Gentle pulse for streaks */
+@keyframes gentle-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Stagger animation delays */
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+
+/* Smooth ring progress animation */
+@keyframes ring-progress {
+  from {
+    stroke-dashoffset: var(--ring-circumference);
+  }
+}
+
+.animate-ring {
+  animation: ring-progress 1s ease-out forwards;
+}

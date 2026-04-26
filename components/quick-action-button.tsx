@@ -20,13 +20,16 @@ export function QuickActionButton({ icon, label, onClick, variant = "pink" }: Qu
     <button
       onClick={onClick}
       className={cn(
-        "flex items-center gap-3 px-5 py-4 rounded-xl transition-all duration-200",
+        "flex items-center gap-3 px-5 py-4 rounded-xl",
         "font-medium text-sm md:text-base",
-        "active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0]",
+        "transition-all duration-150 ease-out",
+        "active:scale-95 active:shadow-sm",
+        "hover:-translate-y-0.5 hover:shadow-md",
+        "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0]",
         variantStyles[variant]
       )}
     >
-      {icon}
+      <span className="transition-transform duration-150 group-active:scale-90">{icon}</span>
       <span>{label}</span>
     </button>
   )

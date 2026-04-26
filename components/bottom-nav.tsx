@@ -18,7 +18,7 @@ const tabs = [
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border shadow-lg z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm border-t border-border shadow-lg z-50 animate-in slide-in-from-bottom-4 duration-300">
       <div className="flex items-center justify-around py-2 px-4 max-w-lg mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon
@@ -28,16 +28,29 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-200",
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl",
+                "transition-all duration-150 ease-out",
+                "active:scale-90",
                 "focus:outline-none",
                 isActive
-                  ? "text-[#5A4545] bg-[#E8CFCF]"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-[#5A4545] bg-[#E8CFCF] shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
               )}
               aria-current={isActive ? "page" : undefined}
             >
-              <Icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <Icon 
+                className={cn(
+                  "w-5 h-5 transition-transform duration-150",
+                  isActive && "scale-110"
+                )} 
+                strokeWidth={isActive ? 2.5 : 2} 
+              />
+              <span className={cn(
+                "text-[10px] font-medium transition-all duration-150",
+                isActive && "font-semibold"
+              )}>
+                {tab.label}
+              </span>
             </button>
           )
         })}
