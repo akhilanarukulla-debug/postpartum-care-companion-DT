@@ -1,21 +1,22 @@
 "use client"
 
-import { Smile, Droplets, Bell, ChevronRight, Sparkles } from "lucide-react"
+import { Smile, Droplets, Bell, ChevronRight, MessageSquare } from "lucide-react"
 import { QuickActionButton } from "@/components/quick-action-button"
 import { DailyCheckin } from "@/components/daily-checkin"
 import { StreakBadge } from "@/components/streak-badge"
 import { InsightCard } from "@/components/insight-card"
 import { SectionHeader } from "@/components/section-header"
-import { EmptyState } from "@/components/empty-state"
+import type { MoodHistoryEntry } from "@/components/mood-history-item"
 
 interface DashboardScreenProps {
   onNavigate: (screen: string) => void
-  moodData: { mood: string; icon: string } | null
+  moodData: { mood: string; icon: string; note?: string } | null
   waterData: { current: number; goal: number }
   reminders: Array<{ id: string; title: string; time: string }>
-  onQuickMood: (mood: string) => void
+  onQuickMood: (mood: string, note?: string) => void
   moodStreak: number
   waterStreak: number
+  latestMoodEntry?: MoodHistoryEntry | null
 }
 
 export function DashboardScreen({ 
@@ -25,7 +26,8 @@ export function DashboardScreen({
   reminders,
   onQuickMood,
   moodStreak,
-  waterStreak
+  waterStreak,
+  latestMoodEntry
 }: DashboardScreenProps) {
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -36,18 +38,44 @@ export function DashboardScreen({
 
   const getInsightMessage = () => {
     if (waterData.current >= waterData.goal) {
-      return "You&apos;ve reached your hydration goal today! Your body thanks you."
+      return "You've reached your hydration goal today! Your body thanks you."
     }
     if (moodStreak >= 7) {
-      return `Amazing! You&apos;ve been logging your mood for ${moodStreak} days straight.`
+      return `Amazing! You've been logging your mood for ${moodStreak} days straight.`
     }
     if (waterStreak >= 3) {
       return `Great work on your ${waterStreak}-day hydration streak! Keep it up.`
     }
     if (moodData?.mood === "happy") {
-      return "Wonderful to see you&apos;re feeling happy today!"
+      return "Wonderful to see you're feeling happy today!"
     }
-    return "Remember: taking care of yourself is not selfish, it&apos;s essential."
+    return "Remember: taking care of yourself is not selfish, it's essential."
+  }
+
+  // Format note preview (max 50 chars)
+  const notePreview = latestMoodEntry?.note 
+    ? latestMoodEntry.note.length > 50 
+      ? latestMoodEntry.note.slice(0, 50) + "..." 
+      : latestMoodEntry.note
+    : null
+
+  // Format time for mood entry
+  const formatMoodTime = (entry: MoodHistoryEntry | null | undefined) => {
+    if (!entry) return null
+    const date = new Date(entry.timestamp)
+    const now = new Date()
+    
+    if (date.toDateString() === now.toDateString()) {
+      return `Today at ${date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+    }
+    
+    const yesterday = new Date(now)
+    yesterday.setDate(yesterday.getDate() - 1)
+    if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday`
+    }
+    
+    return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
   }
 
   return (
@@ -85,7 +113,7 @@ export function DashboardScreen({
 
       {/* Status Cards */}
       <section className="mb-8">
-        <SectionHeader title="Today&apos;s Progress" subtitle="Track your wellness" />
+        <SectionHeader title="Today's Progress" subtitle="Track your wellness" />
         
         <div className="space-y-3">
           {/* Water Intake Card */}
@@ -116,13 +144,13 @@ export function DashboardScreen({
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </button>
 
-          {/* Last Mood Card */}
+          {/* Last Mood Card - Enhanced with note preview */}
           <button
             onClick={() => onNavigate("mood")}
-            className="w-full bg-card rounded-2xl p-5 shadow-sm flex items-center justify-between transition-all duration-200 hover:shadow-md tap-scale-sm animate-in fade-in slide-in-from-bottom-4 duration-500 stagger-2"
+            className="w-full bg-card rounded-2xl p-5 shadow-sm flex items-start justify-between transition-all duration-200 hover:shadow-md tap-scale-sm animate-in fade-in slide-in-from-bottom-4 duration-500 stagger-2"
           >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#D6D4F0] rounded-xl flex items-center justify-center">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-[#D6D4F0] rounded-xl flex items-center justify-center flex-shrink-0">
                 {moodData ? (
                   <span className="text-2xl">{moodData.icon}</span>
                 ) : (
@@ -130,13 +158,30 @@ export function DashboardScreen({
                 )}
               </div>
               <div className="text-left">
-                <p className="text-sm text-muted-foreground">Last mood</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground">Last mood</p>
+                  {latestMoodEntry && (
+                    <span className="text-xs text-muted-foreground/70">
+                      {formatMoodTime(latestMoodEntry)}
+                    </span>
+                  )}
+                </div>
                 <p className="font-medium text-foreground capitalize">
                   {moodData ? moodData.mood : "Not logged yet"}
                 </p>
+                
+                {/* Note Preview */}
+                {notePreview && (
+                  <div className="flex items-start gap-1.5 mt-2">
+                    <MessageSquare className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      {notePreview}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-1" />
           </button>
 
           {/* Upcoming Reminders Card */}

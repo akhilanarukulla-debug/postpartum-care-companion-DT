@@ -5,12 +5,15 @@ import { MoodCard } from "@/components/mood-card"
 import { StreakBadge } from "@/components/streak-badge"
 import { InsightCard } from "@/components/insight-card"
 import { SectionHeader } from "@/components/section-header"
+import { MoodHistory } from "@/components/mood-history"
+import type { MoodHistoryEntry } from "@/components/mood-history-item"
 import { Smile, Meh, Frown, CloudRain, Moon } from "lucide-react"
 
 interface MoodScreenProps {
   onSaveMood: (mood: string, note?: string) => void
   currentMood: string | null
   streak?: number
+  moodHistory: MoodHistoryEntry[]
 }
 
 const moods = [
@@ -22,18 +25,19 @@ const moods = [
 ]
 
 const supportiveMessages: Record<string, string> = {
-  happy: "That&apos;s wonderful to hear! Cherish this feeling.",
-  okay: "It&apos;s okay to feel okay. You&apos;re doing great.",
-  sad: "It&apos;s okay to feel this way. You&apos;re not alone.",
+  happy: "That's wonderful to hear! Cherish this feeling.",
+  okay: "It's okay to feel okay. You're doing great.",
+  sad: "It's okay to feel this way. You're not alone.",
   overwhelmed: "Take a deep breath. One step at a time.",
   tired: "Rest is important. Be gentle with yourself.",
 }
 
-export function MoodScreen({ onSaveMood, currentMood, streak = 0 }: MoodScreenProps) {
+export function MoodScreen({ onSaveMood, currentMood, streak = 0, moodHistory }: MoodScreenProps) {
   const [selectedMood, setSelectedMood] = useState<string | null>(currentMood)
   const [note, setNote] = useState("")
   const [isSaved, setIsSaved] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [showAllHistory, setShowAllHistory] = useState(false)
 
   const handleSave = () => {
     if (selectedMood) {
@@ -42,6 +46,7 @@ export function MoodScreen({ onSaveMood, currentMood, streak = 0 }: MoodScreenPr
         onSaveMood(selectedMood, note)
         setIsSaved(true)
         setIsSaving(false)
+        setNote("") // Clear note after saving
         setTimeout(() => setIsSaved(false), 2000)
       }, 150)
     }
@@ -108,15 +113,18 @@ export function MoodScreen({ onSaveMood, currentMood, streak = 0 }: MoodScreenPr
         <SectionHeader title="Add a Note" subtitle="Optional - capture your thoughts" />
         <textarea
           id="mood-note"
-          placeholder="How are you really feeling? Any thoughts you&apos;d like to capture..."
+          placeholder="How are you really feeling? Any thoughts you'd like to capture..."
           value={note}
           onChange={(e) => setNote(e.target.value)}
           className="w-full p-4 bg-input rounded-2xl text-foreground placeholder:text-muted-foreground resize-none h-32 focus:outline-none focus:ring-2 focus:ring-[#D6D4F0] transition-all duration-200"
         />
+        <p className="text-xs text-muted-foreground mt-2 text-right">
+          {note.length > 0 ? `${note.length} characters` : "Your notes are private and just for you"}
+        </p>
       </section>
 
       {/* Save Button */}
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+      <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
         <button
           onClick={handleSave}
           disabled={!selectedMood || isSaving}
@@ -125,6 +133,16 @@ export function MoodScreen({ onSaveMood, currentMood, streak = 0 }: MoodScreenPr
           {isSaved ? "Saved!" : isSaving ? "Saving..." : "Save Mood"}
         </button>
       </div>
+
+      {/* Mood History Section */}
+      <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-400">
+        <MoodHistory 
+          entries={moodHistory}
+          maxItems={showAllHistory ? undefined : 5}
+          showViewAll={!showAllHistory && moodHistory.length > 5}
+          onViewAll={() => setShowAllHistory(true)}
+        />
+      </section>
     </div>
   )
 }
