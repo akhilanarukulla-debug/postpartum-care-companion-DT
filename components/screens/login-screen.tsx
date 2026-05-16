@@ -1,11 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Heart, Mail, Lock, Eye, EyeOff } from "lucide-react"
+import { Heart, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react"
 import { BackgroundPattern } from "@/components/background-pattern"
 
 interface LoginScreenProps {
-  onLogin: () => void
+  onLogin: (email: string, password: string, isSignup: boolean) => Promise<{ success: boolean; error?: string }>
 }
 
 export function LoginScreen({ onLogin }: LoginScreenProps) {
@@ -13,10 +13,24 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    onLogin()
+    setError(null)
+    setIsLoading(true)
+    
+    try {
+      const result = await onLogin(email, password, !isLogin)
+      if (!result.success) {
+        setError(result.error || "Authentication failed")
+      }
+    } catch (err) {
+      setError("An unexpected error occurred")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -42,6 +56,12 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           {isLogin ? "Welcome back" : "Create your account"}
         </h2>
 
+        {error && (
+          <div className="mb-4 p-3 bg-[#E8CFCF]/30 border border-[#E8CFCF] rounded-xl text-sm text-[#5A4545] text-center">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -52,6 +72,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full pl-12 pr-4 py-4 bg-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#D6D4F0] transition-all"
               required
+              disabled={isLoading}
             />
           </div>
 
@@ -64,6 +85,8 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full pl-12 pr-12 py-4 bg-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#D6D4F0] transition-all"
               required
+              minLength={6}
+              disabled={isLoading}
             />
             <button
               type="button"
@@ -75,20 +98,25 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
             </button>
           </div>
 
-          {isLogin && (
-            <button
-              type="button"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Forgot password?
-            </button>
+          {!isLogin && (
+            <p className="text-xs text-muted-foreground">
+              Password must be at least 6 characters
+            </p>
           )}
 
           <button
             type="submit"
-            className="w-full py-4 bg-[#E8CFCF] text-[#5A4545] rounded-xl font-medium hover:bg-[#E0C5C5] active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0]"
+            disabled={isLoading}
+            className="w-full py-4 bg-[#E8CFCF] text-[#5A4545] rounded-xl font-medium hover:bg-[#E0C5C5] active:scale-[0.98] transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isLogin ? "Sign in" : "Create account"}
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                {isLogin ? "Signing in..." : "Creating account..."}
+              </>
+            ) : (
+              isLogin ? "Sign in" : "Create account"
+            )}
           </button>
         </form>
 
@@ -96,8 +124,12 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
           <p className="text-sm text-muted-foreground">
             {isLogin ? "New here? " : "Already have an account? "}
             <button
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin)
+                setError(null)
+              }}
               className="text-[#5A4545] font-medium hover:underline"
+              disabled={isLoading}
             >
               {isLogin ? "Create an account" : "Sign in"}
             </button>

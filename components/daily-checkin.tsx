@@ -3,8 +3,9 @@
 import { Smile, Meh, Frown, CloudRain, Moon } from "lucide-react"
 
 interface DailyCheckinProps {
-  onSelectMood: (mood: string) => void
+  onSelectMood: (mood: string) => void | Promise<void>
   currentMood: string | null
+  disabled?: boolean
 }
 
 const quickMoods = [
@@ -15,7 +16,7 @@ const quickMoods = [
   { id: "tired", icon: <Moon className="w-5 h-5" />, label: "Tired", color: "#CFE8E6" },
 ]
 
-export function DailyCheckin({ onSelectMood, currentMood }: DailyCheckinProps) {
+export function DailyCheckin({ onSelectMood, currentMood, disabled = false }: DailyCheckinProps) {
   return (
     <div className="bg-card rounded-2xl p-5 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-4">
@@ -32,7 +33,8 @@ export function DailyCheckin({ onSelectMood, currentMood }: DailyCheckinProps) {
             <button
               key={mood.id}
               onClick={() => onSelectMood(mood.id)}
-              className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0] ${
+              disabled={disabled}
+              className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all duration-150 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#D6D4F0] disabled:opacity-50 disabled:cursor-not-allowed ${
                 isSelected 
                   ? "ring-2 ring-[#D6D4F0] shadow-sm" 
                   : "hover:bg-muted"

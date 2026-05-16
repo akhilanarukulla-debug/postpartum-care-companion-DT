@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Smile, Droplets, Bell, ChevronRight, MessageSquare } from "lucide-react"
 import { QuickActionButton } from "@/components/quick-action-button"
 import { DailyCheckin } from "@/components/daily-checkin"
@@ -13,10 +14,11 @@ interface DashboardScreenProps {
   moodData: { mood: string; icon: string; note?: string } | null
   waterData: { current: number; goal: number }
   reminders: Array<{ id: string; title: string; time: string }>
-  onQuickMood: (mood: string, note?: string) => void
+  onQuickMood: (mood: string, note?: string) => void | Promise<void>
   moodStreak: number
   waterStreak: number
   latestMoodEntry?: MoodHistoryEntry | null
+  isLoading?: boolean
 }
 
 export function DashboardScreen({ 
@@ -27,8 +29,19 @@ export function DashboardScreen({
   onQuickMood,
   moodStreak,
   waterStreak,
-  latestMoodEntry
+  latestMoodEntry,
+  isLoading = false
 }: DashboardScreenProps) {
+  const [isSavingMood, setIsSavingMood] = useState(false)
+  
+  const handleQuickMood = async (mood: string, note?: string) => {
+    setIsSavingMood(true)
+    try {
+      await onQuickMood(mood, note)
+    } finally {
+      setIsSavingMood(false)
+    }
+  }
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour < 12) return "Good morning"
@@ -101,8 +114,9 @@ export function DashboardScreen({
       {/* Daily Check-in Card */}
       <section className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
         <DailyCheckin 
-          onSelectMood={onQuickMood} 
-          currentMood={moodData?.mood || null} 
+          onSelectMood={handleQuickMood} 
+          currentMood={moodData?.mood || null}
+          disabled={isSavingMood || isLoading}
         />
       </section>
 

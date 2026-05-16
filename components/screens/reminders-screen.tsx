@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, X, Bell, CheckCircle2 } from "lucide-react"
+import { Plus, X, Bell } from "lucide-react"
 import { ReminderCard } from "@/components/reminder-card"
 import { SectionHeader } from "@/components/section-header"
 import { EmptyState } from "@/components/empty-state"
@@ -17,34 +17,39 @@ interface Reminder {
 
 interface RemindersScreenProps {
   reminders: Reminder[]
-  onUpdateReminders: (reminders: Reminder[]) => void
+  onToggleReminder: (id: string) => void | Promise<void>
+  onAddReminder: (title: string, time: string, type: string) => void | Promise<void>
+  onDeleteReminder?: (id: string) => void | Promise<void>
 }
 
-export function RemindersScreen({ reminders, onUpdateReminders }: RemindersScreenProps) {
+export function RemindersScreen({ 
+  reminders, 
+  onToggleReminder,
+  onAddReminder,
+  onDeleteReminder
+}: RemindersScreenProps) {
   const [showAddForm, setShowAddForm] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
   const [newReminder, setNewReminder] = useState({
     title: "",
     time: "",
     type: "self-care" as const,
   })
 
-  const toggleReminder = (id: string) => {
-    const updated = reminders.map((r) =>
-      r.id === id ? { ...r, completed: !r.completed } : r
-    )
-    onUpdateReminders(updated)
+  const handleToggle = async (id: string) => {
+    await onToggleReminder(id)
   }
 
-  const addReminder = () => {
+  const addReminder = async () => {
     if (newReminder.title && newReminder.time) {
-      const reminder: Reminder = {
-        id: Date.now().toString(),
-        ...newReminder,
-        completed: false,
+      setIsAdding(true)
+      try {
+        await onAddReminder(newReminder.title, newReminder.time, newReminder.type)
+        setNewReminder({ title: "", time: "", type: "self-care" })
+        setShowAddForm(false)
+      } finally {
+        setIsAdding(false)
       }
-      onUpdateReminders([...reminders, reminder])
-      setNewReminder({ title: "", time: "", type: "self-care" })
-      setShowAddForm(false)
     }
   }
 
@@ -69,7 +74,7 @@ export function RemindersScreen({ reminders, onUpdateReminders }: RemindersScree
         <section className="mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-50">
           <InsightCard 
             type="general" 
-            message={`You&apos;ve completed ${completedToday} reminder${completedToday !== 1 ? 's' : ''} today. Keep up the great work!`} 
+            message={`You've completed ${completedToday} reminder${completedToday !== 1 ? 's' : ''} today. Keep up the great work!`} 
           />
         </section>
       )}
@@ -95,17 +100,20 @@ export function RemindersScreen({ reminders, onUpdateReminders }: RemindersScree
               value={newReminder.title}
               onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
               className="w-full px-4 py-3 bg-input rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#D6D4F0] transition-all duration-200"
+              disabled={isAdding}
             />
             <input
               type="time"
               value={newReminder.time}
               onChange={(e) => setNewReminder({ ...newReminder, time: e.target.value })}
               className="w-full px-4 py-3 bg-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#D6D4F0] transition-all duration-200"
+              disabled={isAdding}
             />
             <select
               value={newReminder.type}
               onChange={(e) => setNewReminder({ ...newReminder, type: e.target.value as Reminder["type"] })}
               className="w-full px-4 py-3 bg-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#D6D4F0] transition-all duration-200"
+              disabled={isAdding}
             >
               <option value="self-care">Self-care</option>
               <option value="medication">Medication</option>
@@ -114,10 +122,10 @@ export function RemindersScreen({ reminders, onUpdateReminders }: RemindersScree
             </select>
             <button
               onClick={addReminder}
-              disabled={!newReminder.title || !newReminder.time}
+              disabled={!newReminder.title || !newReminder.time || isAdding}
               className="w-full py-3 bg-[#E8CFCF] text-[#5A4545] rounded-xl font-medium hover:bg-[#E0C5C5] tap-scale transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Reminder
+              {isAdding ? "Adding..." : "Add Reminder"}
             </button>
           </div>
         </div>
@@ -143,7 +151,7 @@ export function RemindersScreen({ reminders, onUpdateReminders }: RemindersScree
                   time={reminder.time}
                   type={reminder.type}
                   isCompleted={reminder.completed}
-                  onToggle={() => toggleReminder(reminder.id)}
+                  onToggle={() => handleToggle(reminder.id)}
                 />
               </div>
             ))}
@@ -180,7 +188,7 @@ export function RemindersScreen({ reminders, onUpdateReminders }: RemindersScree
                   time={reminder.time}
                   type={reminder.type}
                   isCompleted={reminder.completed}
-                  onToggle={() => toggleReminder(reminder.id)}
+                  onToggle={() => handleToggle(reminder.id)}
                 />
               </div>
             ))}
