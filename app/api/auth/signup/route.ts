@@ -69,23 +69,26 @@ export async function POST(request: Request) {
     // Create session
     const { sessionToken, expiresAt } = await createSession(user.id)
 
-    // Set session cookie
-    const cookieStore = await cookies()
-    cookieStore.set("session_token", sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      expires: expiresAt,
-      path: "/",
-    })
-
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
       },
     })
+
+    // Set session cookie in response headers
+    response.cookies.set("session_token", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      expires: expiresAt,
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    })
+
+    return response
   } catch (error) {
     console.error("Signup error:", error)
     return NextResponse.json(
