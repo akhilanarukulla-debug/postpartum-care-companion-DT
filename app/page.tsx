@@ -95,12 +95,17 @@ const moodValues: Record<string, number> = {
 
 // SWR fetcher function
 const fetcher = async (url: string) => {
-  const res = await fetch(url)
+  console.log("[v0] SWR fetcher called for:", url)
+  const res = await fetch(url, { credentials: "include" })
+  console.log("[v0] SWR fetcher response:", url, res.status)
   if (!res.ok) {
     const error = new Error("An error occurred while fetching the data.")
+    console.error("[v0] SWR fetcher error:", url, res.status)
     throw error
   }
-  return res.json()
+  const data = await res.json()
+  console.log("[v0] SWR fetcher data:", url, data)
+  return data
 }
 
 // Convert database mood entries to MoodHistoryEntry format
@@ -168,15 +173,20 @@ export default function Home() {
   // Check authentication status on mount
   useEffect(() => {
     const checkAuth = async () => {
+      console.log("[v0] Checking auth status...")
       try {
-        const res = await fetch("/api/auth/me")
+        const res = await fetch("/api/auth/me", { credentials: "include" })
+        console.log("[v0] Auth check response:", res.status)
         if (res.ok) {
           const data = await res.json()
+          console.log("[v0] Auth check success:", data.user)
           setUser(data.user)
           setShowOnboarding(false)
+        } else {
+          console.log("[v0] Auth check: No session")
         }
       } catch (error) {
-        console.error("Auth check failed:", error)
+        console.error("[v0] Auth check failed:", error)
       } finally {
         setAuthChecked(true)
       }
@@ -206,36 +216,50 @@ export default function Home() {
   )
 
   const handleLogin = async (email: string, password: string, isSignup: boolean): Promise<{ success: boolean; error?: string }> => {
+    console.log("[v0] handleLogin called:", { email, isSignup })
     try {
       const endpoint = isSignup ? "/api/auth/signup" : "/api/auth/login"
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include", // Ensure cookies are included
       })
       
       const data = await res.json()
+      console.log("[v0] handleLogin response:", { status: res.status, data })
       
       if (!res.ok) {
         return { success: false, error: data.error || "Authentication failed" }
       }
       
+      // Set user state - this triggers SWR to fetch data
+      // The cookie should be set by the browser from the Set-Cookie header
       setUser(data.user)
       setShowOnboarding(false)
-      // Revalidate all data
-      mutate("/api/dashboard")
-      mutate("/api/reminders")
-      mutate("/api/analytics")
+      
+      // Small delay to ensure cookie is stored before fetching data
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Revalidate all data after cookie is set
+      console.log("[v0] handleLogin: Revalidating data...")
+      await mutate("/api/dashboard")
+      await mutate("/api/reminders")
+      await mutate("/api/analytics")
+      console.log("[v0] handleLogin: Revalidation complete")
+      
       return { success: true }
     } catch (error) {
-      console.error("Login error:", error)
+      console.error("[v0] handleLogin error:", error)
       return { success: false, error: "An unexpected error occurred" }
     }
   }
 
   const handleLogout = async () => {
+    console.log("[v0] handleLogout called")
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" })
+      console.log("[v0] handleLogout: Clearing user state")
       setUser(null)
       setShowOnboarding(true)
       // Clear all cached data
@@ -243,52 +267,74 @@ export default function Home() {
       mutate("/api/reminders", undefined)
       mutate("/api/analytics", undefined)
     } catch (error) {
-      console.error("Logout error:", error)
+      console.error("[v0] handleLogout error:", error)
     }
   }
 
   const handleSaveMood = useCallback(async (mood: string, note?: string) => {
+    console.log("[v0] handleSaveMood called with mood:", mood, "note:", note)
     try {
       const res = await fetch("/api/mood", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mood, note }),
+        credentials: "include",
       })
       
+      console.log("[v0] handleSaveMood response status:", res.status)
+      const data = await res.json()
+      console.log("[v0] handleSaveMood response data:", data)
+      
       if (res.ok) {
+        console.log("[v0] handleSaveMood: Success, revalidating...")
         // Revalidate dashboard and analytics data
-        mutate("/api/dashboard")
-        mutate("/api/analytics")
+        await mutate("/api/dashboard")
+        await mutate("/api/analytics")
+        console.log("[v0] handleSaveMood: Revalidation complete")
+      } else {
+        console.error("[v0] handleSaveMood: API error:", data.error)
       }
     } catch (error) {
-      console.error("Failed to save mood:", error)
+      console.error("[v0] handleSaveMood failed:", error)
     }
   }, [])
 
   const handleUpdateWater = useCallback(async (glasses: number) => {
+    console.log("[v0] handleUpdateWater called with glasses:", glasses)
     try {
       const res = await fetch("/api/water", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ glasses }),
+        credentials: "include",
       })
       
+      console.log("[v0] handleUpdateWater response status:", res.status)
+      const data = await res.json()
+      console.log("[v0] handleUpdateWater response data:", data)
+      
       if (res.ok) {
+        console.log("[v0] handleUpdateWater: Success, revalidating...")
         // Revalidate dashboard and analytics data
-        mutate("/api/dashboard")
-        mutate("/api/analytics")
+        await mutate("/api/dashboard")
+        await mutate("/api/analytics")
+        console.log("[v0] handleUpdateWater: Revalidation complete")
+      } else {
+        console.error("[v0] handleUpdateWater: API error:", data.error)
       }
     } catch (error) {
-      console.error("Failed to update water:", error)
+      console.error("[v0] handleUpdateWater failed:", error)
     }
   }, [])
 
   const handleUpdateWaterGoal = useCallback(async (goal: number) => {
+    console.log("[v0] handleUpdateWaterGoal called with goal:", goal)
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ water_goal: goal }),
+        credentials: "include",
       })
       
       if (res.ok) {
@@ -305,11 +351,13 @@ export default function Home() {
   }, [])
 
   const handleToggleReminder = useCallback(async (reminderId: string) => {
+    console.log("[v0] handleToggleReminder called with id:", reminderId)
     try {
       const res = await fetch("/api/reminders", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: reminderId, action: "toggle" }),
+        credentials: "include",
       })
       
       if (res.ok) {
@@ -322,28 +370,40 @@ export default function Home() {
   }, [])
 
   const handleAddReminder = useCallback(async (title: string, time: string, type: string) => {
+    console.log("[v0] handleAddReminder called with title:", title, "time:", time, "type:", type)
     try {
       const res = await fetch("/api/reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, time, type }),
+        credentials: "include",
       })
       
+      console.log("[v0] handleAddReminder response status:", res.status)
+      const data = await res.json()
+      console.log("[v0] handleAddReminder response data:", data)
+      
       if (res.ok) {
-        mutate("/api/reminders")
-        mutate("/api/dashboard")
+        console.log("[v0] handleAddReminder: Success, revalidating...")
+        await mutate("/api/reminders")
+        await mutate("/api/dashboard")
+        console.log("[v0] handleAddReminder: Revalidation complete")
+      } else {
+        console.error("[v0] handleAddReminder: API error:", data.error)
       }
     } catch (error) {
-      console.error("Failed to add reminder:", error)
+      console.error("[v0] handleAddReminder failed:", error)
     }
   }, [])
 
   const handleDeleteReminder = useCallback(async (reminderId: string) => {
+    console.log("[v0] handleDeleteReminder called with id:", reminderId)
     try {
       const res = await fetch("/api/reminders", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: reminderId }),
+        credentials: "include",
       })
       
       if (res.ok) {
@@ -356,6 +416,7 @@ export default function Home() {
   }, [])
 
   const handleNavigate = (screen: string) => {
+    console.log("[v0] handleNavigate called with:", screen)
     setActiveTab(screen)
   }
 

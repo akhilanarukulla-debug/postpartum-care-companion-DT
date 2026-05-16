@@ -31,26 +31,33 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    console.log("[v0] Water API POST: Starting request")
     const user = await getAuthenticatedUser()
 
     if (!user) {
+      console.log("[v0] Water API POST: Unauthorized - no user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    console.log("[v0] Water API POST: User authenticated:", user.id)
     const body = await request.json()
     const { glasses } = body
+    console.log("[v0] Water API POST: Received glasses:", glasses)
 
     if (typeof glasses !== "number" || glasses < 0) {
+      console.log("[v0] Water API POST: Invalid glasses value")
       return NextResponse.json(
         { error: "Valid glasses count is required" },
         { status: 400 }
       )
     }
 
+    console.log("[v0] Water API POST: Calling updateWaterEntry for user:", user.id, "glasses:", glasses)
     const entry = await updateWaterEntry(user.id, glasses)
+    console.log("[v0] Water API POST: Entry saved:", entry)
     return NextResponse.json(entry)
   } catch (error) {
-    console.error("Water API POST error:", error)
+    console.error("[v0] Water API POST error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

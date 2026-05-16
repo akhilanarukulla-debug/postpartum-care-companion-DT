@@ -27,7 +27,10 @@ export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
           return (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                console.log("[v0] BottomNav: Clicking tab:", tab.id)
+                onTabChange(tab.id)
+              }}
               className={cn(
                 "flex flex-col items-center gap-1 px-3 py-2 rounded-xl",
                 "transition-all duration-150 ease-out",
