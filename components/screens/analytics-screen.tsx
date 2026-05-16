@@ -178,6 +178,15 @@ export function AnalyticsScreen({
     : null
 
   const getInsightMessage = () => {
+    if (moodHistory.length === 1 && waterHistory.length === 0) {
+      return "Great start! You've logged your first mood. Keep tracking daily to build a complete wellness picture."
+    }
+    if (waterHistory.length === 1 && moodHistory.length === 0) {
+      return "Excellent! You're starting your hydration journey. Add mood tracking for complete wellness insights."
+    }
+    if (moodHistory.length === 1 && waterHistory.length === 1) {
+      return "Fantastic! You've taken your first steps in mood and hydration tracking. Keep it up!"
+    }
     if (moodStreak >= 7 && waterStreak >= 7) {
       return "Incredible consistency! You've been tracking both mood and hydration for a week straight."
     }
@@ -227,7 +236,7 @@ export function AnalyticsScreen({
         )}
       </header>
 
-      {!hasData ? (
+      {!hasData && moodHistory.length === 0 && waterHistory.length === 0 ? (
         <EmptyState
           icon={<BarChart3 className="w-6 h-6" />}
           title="No data yet"
