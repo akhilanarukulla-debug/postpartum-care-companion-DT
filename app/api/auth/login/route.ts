@@ -3,7 +3,17 @@ import { cookies } from "next/headers"
 import { neon } from "@neondatabase/serverless"
 import { verifyPassword, createSession } from "@/lib/auth"
 
-const sql = neon(process.env.DATABASE_URL!)
+let sql: any = null
+
+function getSql() {
+  if (!sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sql = neon(process.env.DATABASE_URL)
+  }
+  return sql
+}
 
 export async function POST(request: Request) {
   try {
@@ -18,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     // Find user and their credential account
-    const result = await sql`
+    const result = await getSql()`
       SELECT u.id, u.email, u.name, a.password
       FROM neon_auth."user" u
       JOIN neon_auth.account a ON a."userId" = u.id

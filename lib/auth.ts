@@ -1,7 +1,17 @@
 import { cookies } from "next/headers"
 import { neon } from "@neondatabase/serverless"
 
-const sql = neon(process.env.DATABASE_URL!)
+let sql: any = null
+
+function getSql() {
+  if (!sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sql = neon(process.env.DATABASE_URL)
+  }
+  return sql
+}
 
 export async function getAuthenticatedUser() {
   const cookieStore = await cookies()
@@ -13,7 +23,7 @@ export async function getAuthenticatedUser() {
 
   try {
     // Check for valid session in neon_auth schema
-    const result = await sql`
+    const result = await getSql()`
       SELECT u.id, u.email, u.name, u."createdAt"
       FROM neon_auth.session s
       JOIN neon_auth."user" u ON s."userId" = u.id
@@ -36,7 +46,7 @@ export async function createSession(userId: string) {
   const sessionToken = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
 
-  await sql`
+  await getSql()`
     INSERT INTO neon_auth.session ("userId", token, "expiresAt", "createdAt", "updatedAt")
     VALUES (${userId}, ${sessionToken}, ${expiresAt.toISOString()}, NOW(), NOW())
   `
@@ -45,7 +55,7 @@ export async function createSession(userId: string) {
 }
 
 export async function deleteSession(sessionToken: string) {
-  await sql`
+  await getSql()`
     DELETE FROM neon_auth.session 
     WHERE token = ${sessionToken}
   `
