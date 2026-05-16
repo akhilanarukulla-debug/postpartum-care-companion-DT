@@ -34,8 +34,6 @@ interface DashboardData {
     mood_streak: number
     water_streak: number
     show_onboarding: boolean
-    username?: string
-    bio?: string
   }
   latestMood: {
     id: string
@@ -527,24 +525,6 @@ export default function Home() {
           onLogout={handleLogout}
           moodStreak={moodStreak}
           waterStreak={waterStreak}
-          username={dashboardData?.settings?.username || ""}
-          bio={dashboardData?.settings?.bio || ""}
-          onUpdateProfile={async (username: string, bio: string) => {
-            try {
-              const res = await fetch("/api/settings", {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ username, bio }),
-              })
-              if (!res.ok) throw new Error("Failed to update profile")
-              // Revalidate dashboard data to get updated profile
-              mutate("/api/dashboard")
-            } catch (error) {
-              console.error("Profile update error:", error)
-              throw error
-            }
-          }}
         />
       )}
 

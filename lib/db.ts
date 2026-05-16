@@ -31,12 +31,10 @@ export async function createOrUpdateUserSettings(
     last_mood_date?: string | null
     last_water_date?: string | null
     show_onboarding?: boolean
-    username?: string
-    bio?: string
   }
 ) {
   const result = await getSql()`
-    INSERT INTO user_settings (user_id, water_goal, mood_streak, water_streak, last_mood_date, last_water_date, show_onboarding, username, bio)
+    INSERT INTO user_settings (user_id, water_goal, mood_streak, water_streak, last_mood_date, last_water_date, show_onboarding)
     VALUES (
       ${userId}, 
       ${settings.water_goal ?? 8}, 
@@ -44,9 +42,7 @@ export async function createOrUpdateUserSettings(
       ${settings.water_streak ?? 0},
       ${settings.last_mood_date ?? null},
       ${settings.last_water_date ?? null},
-      ${settings.show_onboarding ?? true},
-      ${settings.username ?? null},
-      ${settings.bio ?? ""}
+      ${settings.show_onboarding ?? true}
     )
     ON CONFLICT (user_id) 
     DO UPDATE SET 
@@ -56,8 +52,6 @@ export async function createOrUpdateUserSettings(
       last_mood_date = COALESCE(${settings.last_mood_date}, user_settings.last_mood_date),
       last_water_date = COALESCE(${settings.last_water_date}, user_settings.last_water_date),
       show_onboarding = COALESCE(${settings.show_onboarding}, user_settings.show_onboarding),
-      username = COALESCE(${settings.username}, user_settings.username),
-      bio = COALESCE(${settings.bio}, user_settings.bio),
       updated_at = NOW()
     RETURNING *
   `
@@ -102,14 +96,6 @@ export async function updateStreak(
   }
 
   return newStreak
-}
-
-export async function updateUserProfile(userId: string, username?: string, bio?: string) {
-  const updates: Record<string, any> = {}
-  if (username !== undefined) updates.username = username
-  if (bio !== undefined) updates.bio = bio
-  
-  return createOrUpdateUserSettings(userId, updates)
 }
 
 // ============= Mood Entries =============

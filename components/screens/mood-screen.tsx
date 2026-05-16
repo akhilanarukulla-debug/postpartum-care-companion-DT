@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { MoodCard } from "@/components/mood-card"
 import { StreakBadge } from "@/components/streak-badge"
 import { InsightCard } from "@/components/insight-card"
@@ -8,7 +8,6 @@ import { SectionHeader } from "@/components/section-header"
 import { MoodHistory } from "@/components/mood-history"
 import type { MoodHistoryEntry } from "@/components/mood-history-item"
 import { Smile, Meh, Frown, CloudRain, Moon } from "lucide-react"
-import { playSuccessSound, initSoundSettings } from "@/lib/notifications"
 
 interface MoodScreenProps {
   onSaveMood: (mood: string, note?: string) => void
@@ -40,17 +39,11 @@ export function MoodScreen({ onSaveMood, currentMood, streak = 0, moodHistory }:
   const [isSaving, setIsSaving] = useState(false)
   const [showAllHistory, setShowAllHistory] = useState(false)
 
-  // Initialize sound settings on mount
-  useEffect(() => {
-    initSoundSettings()
-  }, [])
-
   const handleSave = () => {
     if (selectedMood) {
       setIsSaving(true)
       setTimeout(() => {
         onSaveMood(selectedMood, note)
-        playSuccessSound()
         setIsSaved(true)
         setIsSaving(false)
         setNote("") // Clear note after saving

@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { SectionHeader } from "@/components/section-header"
-import { PersonalInformationModal } from "@/components/personal-information-modal"
 
 interface ProfileScreenProps {
   userName: string
@@ -25,9 +24,6 @@ interface ProfileScreenProps {
   onLogout: () => void
   moodStreak: number
   waterStreak: number
-  username?: string
-  bio?: string
-  onUpdateProfile?: (username: string, bio: string) => Promise<void>
 }
 
 interface MenuItemProps {
@@ -71,14 +67,10 @@ export function ProfileScreen({
   onUpdateWaterGoal, 
   onLogout,
   moodStreak,
-  waterStreak,
-  username = "",
-  bio = "",
-  onUpdateProfile
+  waterStreak
 }: ProfileScreenProps) {
   const [showGoalEditor, setShowGoalEditor] = useState(false)
   const [tempGoal, setTempGoal] = useState(waterGoal)
-  const [showPersonalInfo, setShowPersonalInfo] = useState(false)
 
   const handleSaveGoal = () => {
     onUpdateWaterGoal(tempGoal)
@@ -139,7 +131,6 @@ export function ProfileScreen({
             <MenuItem
               icon={<User className="w-4 h-4 text-[#5A4545]" />}
               label="Personal Information"
-              onClick={() => setShowPersonalInfo(true)}
             />
             <MenuItem
               icon={<Target className="w-4 h-4 text-[#3A5A58]" />}
@@ -243,15 +234,6 @@ export function ProfileScreen({
           </div>
         </div>
       )}
-
-      {/* Personal Information Modal */}
-      <PersonalInformationModal
-        isOpen={showPersonalInfo}
-        onClose={() => setShowPersonalInfo(false)}
-        initialUsername={username}
-        initialBio={bio}
-        onSave={onUpdateProfile || (async () => {})}
-      />
     </div>
   )
 }
