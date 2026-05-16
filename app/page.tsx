@@ -213,6 +213,7 @@ export default function Home() {
         <WaterScreen
           waterData={waterData}
           onUpdateWater={handleUpdateWater}
+          onUpdateGoal={handleUpdateWaterGoal}
           streak={waterStreak}
         />
       )}

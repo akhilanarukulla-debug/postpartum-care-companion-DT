@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, Minus, Settings } from "lucide-react"
 import { ProgressRing } from "@/components/progress-ring"
 import { StreakBadge } from "@/components/streak-badge"
@@ -9,44 +9,60 @@ import { SectionHeader } from "@/components/section-header"
 
 interface WaterScreenProps {
   waterData: { current: number; goal: number }
-  onUpdateWater: (current: number, goal: number) => void
+  onUpdateWater: (current: number) => void | Promise<void>
+  onUpdateGoal?: (goal: number) => void | Promise<void>
   streak?: number
 }
 
-export function WaterScreen({ waterData, onUpdateWater, streak = 0 }: WaterScreenProps) {
+export function WaterScreen({ waterData, onUpdateWater, onUpdateGoal, streak = 0 }: WaterScreenProps) {
   const [showGoalEdit, setShowGoalEdit] = useState(false)
   const [tempGoal, setTempGoal] = useState(waterData.goal.toString())
   const [isAdding, setIsAdding] = useState(false)
+  const [isSavingGoal, setIsSavingGoal] = useState(false)
+
+  // Update tempGoal when waterData.goal changes
+  useEffect(() => {
+    setTempGoal(waterData.goal.toString())
+  }, [waterData.goal])
 
   const progress = Math.min((waterData.current / waterData.goal) * 100, 100)
 
-  const addWater = () => {
+  const addWater = async () => {
     setIsAdding(true)
-    onUpdateWater(waterData.current + 1, waterData.goal)
+    await onUpdateWater(waterData.current + 1)
     setTimeout(() => setIsAdding(false), 150)
   }
 
-  const removeWater = () => {
+  const removeWater = async () => {
     if (waterData.current > 0) {
-      onUpdateWater(waterData.current - 1, waterData.goal)
+      await onUpdateWater(waterData.current - 1)
     }
   }
 
-  const saveGoal = () => {
+  const saveGoal = async () => {
     const newGoal = parseInt(tempGoal) || 8
-    onUpdateWater(waterData.current, Math.max(1, newGoal))
+    const validGoal = Math.max(1, Math.min(20, newGoal))
+    
+    if (onUpdateGoal) {
+      setIsSavingGoal(true)
+      try {
+        await onUpdateGoal(validGoal)
+      } finally {
+        setIsSavingGoal(false)
+      }
+    }
     setShowGoalEdit(false)
   }
 
   const getInsightMessage = () => {
     if (waterData.current >= waterData.goal) {
-      return "Congratulations! You&apos;ve reached your daily hydration goal. Your body is well-nourished."
+      return "Congratulations! You've reached your daily hydration goal. Your body is well-nourished."
     }
     if (waterData.current >= waterData.goal * 0.75) {
       return "Almost there! Just a few more glasses to reach your goal."
     }
     if (waterData.current >= waterData.goal * 0.5) {
-      return "You&apos;re halfway there! Keep sipping throughout the day."
+      return "You're halfway there! Keep sipping throughout the day."
     }
     return "Staying hydrated helps with energy, mood, and recovery. Every glass counts!"
   }
@@ -64,13 +80,15 @@ export function WaterScreen({ waterData, onUpdateWater, streak = 0 }: WaterScree
               Stay hydrated throughout the day
             </p>
           </div>
-          <button
-            onClick={() => setShowGoalEdit(!showGoalEdit)}
-            className="p-3 rounded-xl bg-card hover:bg-muted tap-scale transition-all duration-150"
-            aria-label="Edit water goal"
-          >
-            <Settings className="w-5 h-5 text-muted-foreground" />
-          </button>
+          {onUpdateGoal && (
+            <button
+              onClick={() => setShowGoalEdit(!showGoalEdit)}
+              className="p-3 rounded-xl bg-card hover:bg-muted tap-scale transition-all duration-150"
+              aria-label="Edit water goal"
+            >
+              <Settings className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
         
         {/* Streak Badge */}
@@ -96,12 +114,14 @@ export function WaterScreen({ waterData, onUpdateWater, streak = 0 }: WaterScree
               value={tempGoal}
               onChange={(e) => setTempGoal(e.target.value)}
               className="flex-1 px-4 py-3 bg-input rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-[#D6D4F0]"
+              disabled={isSavingGoal}
             />
             <button
               onClick={saveGoal}
-              className="px-6 py-3 bg-[#CFE8E6] text-[#3A5A58] rounded-xl font-medium hover:bg-[#C5E0DE] tap-scale transition-all duration-150"
+              disabled={isSavingGoal}
+              className="px-6 py-3 bg-[#CFE8E6] text-[#3A5A58] rounded-xl font-medium hover:bg-[#C5E0DE] tap-scale transition-all duration-150 disabled:opacity-50"
             >
-              Save
+              {isSavingGoal ? "Saving..." : "Save"}
             </button>
           </div>
         </div>
@@ -149,7 +169,7 @@ export function WaterScreen({ waterData, onUpdateWater, streak = 0 }: WaterScree
 
       {/* Daily Progress Bar */}
       <div className="bg-card rounded-2xl p-5 shadow-sm mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-        <SectionHeader title="Today&apos;s Progress" />
+        <SectionHeader title="Today's Progress" />
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm text-muted-foreground">Progress</span>
           <span className="text-sm font-medium text-foreground">{Math.round(progress)}%</span>
