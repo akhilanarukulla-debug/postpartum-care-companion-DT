@@ -1,12 +1,22 @@
 import { neon } from "@neondatabase/serverless"
 
-// Create a reusable SQL client
-const sql = neon(process.env.DATABASE_URL!)
+// Defer SQL client initialization to avoid errors at module load time
+let sql: any = null
+
+function getSql() {
+  if (!sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sql = neon(process.env.DATABASE_URL)
+  }
+  return sql
+}
 
 // ============= User Settings =============
 
 export async function getUserSettings(userId: string) {
-  const result = await sql`
+  const result = await getSql()`
     SELECT * FROM user_settings WHERE user_id = ${userId}
   `
   return result[0] || null
@@ -21,10 +31,12 @@ export async function createOrUpdateUserSettings(
     last_mood_date?: string | null
     last_water_date?: string | null
     show_onboarding?: boolean
+    username?: string
+    bio?: string
   }
 ) {
-  const result = await sql`
-    INSERT INTO user_settings (user_id, water_goal, mood_streak, water_streak, last_mood_date, last_water_date, show_onboarding)
+  const result = await getSql()`
+    INSERT INTO user_settings (user_id, water_goal, mood_streak, water_streak, last_mood_date, last_water_date, show_onboarding, username, bio)
     VALUES (
       ${userId}, 
       ${settings.water_goal ?? 8}, 
@@ -32,7 +44,9 @@ export async function createOrUpdateUserSettings(
       ${settings.water_streak ?? 0},
       ${settings.last_mood_date ?? null},
       ${settings.last_water_date ?? null},
-      ${settings.show_onboarding ?? true}
+      ${settings.show_onboarding ?? true},
+      ${settings.username ?? null},
+      ${settings.bio ?? ""}
     )
     ON CONFLICT (user_id) 
     DO UPDATE SET 
@@ -42,6 +56,8 @@ export async function createOrUpdateUserSettings(
       last_mood_date = COALESCE(${settings.last_mood_date}, user_settings.last_mood_date),
       last_water_date = COALESCE(${settings.last_water_date}, user_settings.last_water_date),
       show_onboarding = COALESCE(${settings.show_onboarding}, user_settings.show_onboarding),
+      username = COALESCE(${settings.username}, user_settings.username),
+      bio = COALESCE(${settings.bio}, user_settings.bio),
       updated_at = NOW()
     RETURNING *
   `
@@ -88,10 +104,18 @@ export async function updateStreak(
   return newStreak
 }
 
+export async function updateUserProfile(userId: string, username?: string, bio?: string) {
+  const updates: Record<string, any> = {}
+  if (username !== undefined) updates.username = username
+  if (bio !== undefined) updates.bio = bio
+  
+  return createOrUpdateUserSettings(userId, updates)
+}
+
 // ============= Mood Entries =============
 
 export async function getMoodEntries(userId: string, limit = 30) {
-  const result = await sql`
+  const result = await getSql()`
     SELECT * FROM mood_entries 
     WHERE user_id = ${userId} 
     ORDER BY created_at DESC 
@@ -101,7 +125,7 @@ export async function getMoodEntries(userId: string, limit = 30) {
 }
 
 export async function getLatestMoodEntry(userId: string) {
-  const result = await sql`
+  const result = await getSql()`
     SELECT * FROM mood_entries 
     WHERE user_id = ${userId} 
     ORDER BY created_at DESC 
@@ -115,7 +139,7 @@ export async function createMoodEntry(
   mood: string,
   note?: string
 ) {
-  const result = await sql`
+  const result = await getSql()`
     INSERT INTO mood_entries (user_id, mood, note)
     VALUES (${userId}, ${mood}, ${note || null})
     RETURNING *
@@ -129,7 +153,7 @@ export async function createMoodEntry(
 }
 
 export async function getMoodChartData(userId: string, days = 7) {
-  const result = await sql`
+  const result = await getSql()`
     SELECT 
       DATE(created_at) as date,
       mood,
@@ -148,7 +172,7 @@ export async function getMoodChartData(userId: string, days = 7) {
 
 export async function getTodayWaterEntry(userId: string) {
   const today = new Date().toISOString().split("T")[0]
-  const result = await sql`
+  const result = await getSql()`
     SELECT * FROM water_entries 
     WHERE user_id = ${userId} AND date = ${today}
   `
@@ -157,7 +181,7 @@ export async function getTodayWaterEntry(userId: string) {
 
 export async function updateWaterEntry(userId: string, glasses: number) {
   const today = new Date().toISOString().split("T")[0]
-  const result = await sql`
+  const result = await getSql()`
     INSERT INTO water_entries (user_id, glasses, date)
     VALUES (${userId}, ${glasses}, ${today})
     ON CONFLICT (user_id, date) 
@@ -177,7 +201,7 @@ export async function updateWaterEntry(userId: string, glasses: number) {
 }
 
 export async function getWaterHistory(userId: string, days = 7) {
-  const result = await sql`
+  const result = await getSql()`
     SELECT date, glasses 
     FROM water_entries 
     WHERE user_id = ${userId} 
@@ -190,7 +214,7 @@ export async function getWaterHistory(userId: string, days = 7) {
 // ============= Reminders =============
 
 export async function getReminders(userId: string) {
-  const result = await sql`
+  const result = await getSql()`
     SELECT * FROM reminders 
     WHERE user_id = ${userId} 
     ORDER BY time ASC
@@ -204,7 +228,7 @@ export async function createReminder(
   time: string,
   type: string
 ) {
-  const result = await sql`
+  const result = await getSql()`
     INSERT INTO reminders (user_id, title, time, type)
     VALUES (${userId}, ${title}, ${time}, ${type})
     RETURNING *
@@ -213,7 +237,7 @@ export async function createReminder(
 }
 
 export async function toggleReminder(userId: string, reminderId: string) {
-  const result = await sql`
+  const result = await getSql()`
     UPDATE reminders 
     SET 
       completed = NOT completed,
@@ -225,7 +249,7 @@ export async function toggleReminder(userId: string, reminderId: string) {
 }
 
 export async function deleteReminder(userId: string, reminderId: string) {
-  await sql`
+  await getSql()`
     DELETE FROM reminders 
     WHERE id = ${reminderId} AND user_id = ${userId}
   `

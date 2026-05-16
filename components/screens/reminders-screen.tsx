@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, X, Bell } from "lucide-react"
 import { ReminderCard } from "@/components/reminder-card"
 import { SectionHeader } from "@/components/section-header"
 import { EmptyState } from "@/components/empty-state"
 import { InsightCard } from "@/components/insight-card"
+import { playReminderSound, playSuccessSound, initSoundSettings } from "@/lib/notifications"
 
 interface Reminder {
   id: string
@@ -36,7 +37,13 @@ export function RemindersScreen({
     type: "self-care" as const,
   })
 
+  // Initialize sound settings on mount
+  useEffect(() => {
+    initSoundSettings()
+  }, [])
+
   const handleToggle = async (id: string) => {
+    playReminderSound()
     await onToggleReminder(id)
   }
 
@@ -45,6 +52,7 @@ export function RemindersScreen({
       setIsAdding(true)
       try {
         await onAddReminder(newReminder.title, newReminder.time, newReminder.type)
+        playSuccessSound()
         setNewReminder({ title: "", time: "", type: "self-care" })
         setShowAddForm(false)
       } finally {

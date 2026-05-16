@@ -4,7 +4,17 @@ import { neon } from "@neondatabase/serverless"
 import { hashPassword, createSession } from "@/lib/auth"
 import { createOrUpdateUserSettings } from "@/lib/db"
 
-const sql = neon(process.env.DATABASE_URL!)
+let sql: any = null
+
+function getSql() {
+  if (!sql) {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set")
+    }
+    sql = neon(process.env.DATABASE_URL)
+  }
+  return sql
+}
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user already exists
-    const existingUser = await sql`
+    const existingUser = await getSql()`
       SELECT id FROM neon_auth."user" WHERE email = ${email.toLowerCase()}
     `
 
@@ -34,7 +44,7 @@ export async function POST(request: Request) {
     const hashedPassword = await hashPassword(password)
     
     // Create user in neon_auth.user
-    const userResult = await sql`
+    const userResult = await getSql()`
       INSERT INTO neon_auth."user" (email, name, "emailVerified", "createdAt", "updatedAt")
       VALUES (${email.toLowerCase()}, ${name || "Mama"}, false, NOW(), NOW())
       RETURNING id, email, name, "createdAt"
@@ -43,7 +53,7 @@ export async function POST(request: Request) {
     const user = userResult[0]
 
     // Create account with password in neon_auth.account
-    await sql`
+    await getSql()`
       INSERT INTO neon_auth.account ("userId", "accountId", "providerId", password, "createdAt", "updatedAt")
       VALUES (${user.id}, ${email.toLowerCase()}, 'credential', ${hashedPassword}, NOW(), NOW())
     `
@@ -59,23 +69,26 @@ export async function POST(request: Request) {
     // Create session
     const { sessionToken, expiresAt } = await createSession(user.id)
 
-    // Set session cookie
-    const cookieStore = await cookies()
-    cookieStore.set("session_token", sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      expires: expiresAt,
-      path: "/",
-    })
-
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
       },
     })
+
+    // Set session cookie in response headers
+    response.cookies.set("session_token", sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      expires: expiresAt,
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60, // 30 days in seconds
+    })
+
+    return response
   } catch (error) {
     console.error("Signup error:", error)
     return NextResponse.json(
